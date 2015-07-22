@@ -35,11 +35,11 @@ class MethodSecurityInterceptorTest extends \PHPUnit_Framework_TestCase
     /**
      * @expectedException Symfony\Component\Security\Core\Exception\AuthenticationCredentialsNotFoundException
      */
-    public function testInvokeThrowsExceptionWhenSecurityContextHasNoToken()
+    public function testInvokeThrowsExceptionWhenSecurityTokenStorageHasNoToken()
     {
-        list($interceptor, $securityContext,,,,) = $this->getInterceptor();
+        list($interceptor, $tokenStorage,,,,) = $this->getInterceptor();
 
-        $securityContext
+        $tokenStorage
             ->expects($this->once())
             ->method('getToken')
             ->will($this->returnValue(null))
@@ -53,7 +53,7 @@ class MethodSecurityInterceptorTest extends \PHPUnit_Framework_TestCase
      */
     public function testInvokeAuthenticatesTokenIfItIsNotYetAuthenticated()
     {
-        list($interceptor, $securityContext, $authManager,,,) = $this->getInterceptor();
+        list($interceptor, $tokenStorage, $authManager,,,) = $this->getInterceptor();
 
         $token = $this->getMock('Symfony\Component\Security\Core\Authentication\Token\TokenInterface');
         $token
@@ -62,7 +62,7 @@ class MethodSecurityInterceptorTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue(false))
         ;
 
-        $securityContext
+        $tokenStorage
             ->expects($this->once())
             ->method('getToken')
             ->will($this->returnValue($token))
@@ -82,11 +82,11 @@ class MethodSecurityInterceptorTest extends \PHPUnit_Framework_TestCase
      */
     public function testInvokeAuthenticatesTokenIfAlwaysAuthenticateIsTrue()
     {
-        list($interceptor, $securityContext, $authManager,,,) = $this->getInterceptor();
+        list($interceptor, $tokenStorage, $authManager,,,) = $this->getInterceptor();
 
         $token = $this->getMock('Symfony\Component\Security\Core\Authentication\Token\TokenInterface');
 
-        $securityContext
+        $tokenStorage
             ->expects($this->once())
             ->method('getToken')
             ->will($this->returnValue($token))
@@ -120,7 +120,7 @@ class MethodSecurityInterceptorTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue($metadata))
         ;
 
-        list($interceptor, $context, $authManager, $adm,,) = $this->getInterceptor($factory);
+        list($interceptor, $tokenStorage, $authManager, $adm,,) = $this->getInterceptor($factory);
 
         $token = $this->getMock('Symfony\Component\Security\Core\Authentication\Token\TokenInterface');
         $token
@@ -129,12 +129,12 @@ class MethodSecurityInterceptorTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue(false))
         ;
 
-        $context
+        $tokenStorage
             ->expects($this->once())
             ->method('getToken')
             ->will($this->returnValue($token))
         ;
-        $context
+        $tokenStorage
             ->expects($this->once())
             ->method('setToken')
             ->with($this->equalTo($token))
@@ -176,9 +176,9 @@ class MethodSecurityInterceptorTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue($metadata))
         ;
 
-        list($interceptor, $context,, $adm,,) = $this->getInterceptor($factory);
+        list($interceptor, $tokenStorage,, $adm,,) = $this->getInterceptor($factory);
 
-        $context
+        $tokenStorage
             ->expects($this->once())
             ->method('getToken')
             ->will($this->returnValue($token = $this->getToken()))
@@ -217,11 +217,11 @@ class MethodSecurityInterceptorTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue($metadata))
         ;
 
-        list($interceptor, $context,,,, $runAsManager) = $this->getInterceptor($factory);
+        list($interceptor, $tokenStorage,,,, $runAsManager) = $this->getInterceptor($factory);
         $invocation = $this->getInvocation($interceptor, 'throwException');
 
         $token = $this->getToken();
-        $context
+        $tokenStorage
             ->expects($this->once())
             ->method('getToken')
             ->will($this->returnValue($token))
@@ -234,7 +234,7 @@ class MethodSecurityInterceptorTest extends \PHPUnit_Framework_TestCase
             ->will($this->returnValue($runAsToken))
         ;
 
-        $context
+        $tokenStorage
             ->expects($this->exactly(2))
             ->method('setToken')
         ;
@@ -270,18 +270,15 @@ class MethodSecurityInterceptorTest extends \PHPUnit_Framework_TestCase
             ;
         }
 
-        $securityContext = $this->getMockBuilder('Symfony\Component\Security\Core\SecurityContext')
-                            ->disableOriginalConstructor()
-                            ->getMock();
-
+        $tokenStorage = $this->getMock('Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface');
         $authenticationManager = $this->getMock('Symfony\Component\Security\Core\Authentication\AuthenticationManagerInterface');
         $accessDecisionManager = $this->getMock('Symfony\Component\Security\Core\Authorization\AccessDecisionManagerInterface');
         $afterInvocationManager = $this->getMock('JMS\SecurityExtraBundle\Security\Authorization\AfterInvocation\AfterInvocationManagerInterface');
         $runAsManager = $this->getMock('JMS\SecurityExtraBundle\Security\Authorization\RunAsManagerInterface');
 
         return array(
-            new MethodSecurityInterceptor($securityContext, $authenticationManager, $accessDecisionManager, $afterInvocationManager, $runAsManager, $metadataFactory),
-            $securityContext,
+            new MethodSecurityInterceptor($tokenStorage, $authenticationManager, $accessDecisionManager, $afterInvocationManager, $runAsManager, $metadataFactory),
+            $tokenStorage,
             $authenticationManager,
             $accessDecisionManager,
             $afterInvocationManager,
